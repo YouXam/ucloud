@@ -3,7 +3,7 @@ import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource } from './crawler';
 import { html } from './preview';
 import log from './log';
-import { UserInfo, ShortURL, Homework, UndoneList, UndoneListItem, UndoneListResult } from './types';
+import { UserInfo, Homework, UndoneList, UndoneListItem, UndoneListResult } from './types';
 import { v4 as uuid } from 'uuid'
 
 function isNumeric(str: string) {
@@ -133,60 +133,9 @@ router
 				res.data.resource = resource;
 			}
 		}
-		const exists = await env.DB.prepare(`SELECT key FROM shorturl WHERE homework_id = ? AND username = ?`)
-			.bind(id, token.user_name)
-			.first();
-		if (!exists) {
-			res.data.key = uuid().replaceAll('-', '');
-			await env.DB.prepare(`INSERT INTO shorturl (key, homework_id, username) VALUES (?, ?, ?)`)
-				.bind(res.data.key, id, token.user_name)
-				.run();
-		} else if (typeof exists.key === 'string') {
-			res.data.key = exists.key;
-		}
 		return new Response(JSON.stringify(res.data), {
 			headers: {
 				'Content-Type': 'application/json',
-			},
-		});
-	})
-
-	.get('/preview/:key', async ({ params }, env: Env) => {
-		console.log(params.key)
-		const shorturl: ShortURL | null = await env.DB.prepare(`SELECT homework_id, username FROM shorturl WHERE key = ?`)
-			.bind(params.key)
-			.first();
-		if (!shorturl || typeof shorturl.homework_id !== 'string') {
-			return new Response('Not Found.', { status: 404 });
-		}
-		const token = await getToken(shorturl.username, null, env.DB);
-		const detail = await getDetail(shorturl.homework_id, token);
-		if (!detail.success) {
-			return new Response(detail.message, { status: 500 });
-		}
-		const homeworks = await env.DB.prepare(`SELECT info FROM homeworks WHERE id = ?`)
-			.bind(shorturl.homework_id)
-			.first();
-		let className: any = null;
-		if (homeworks && typeof homeworks.info === 'string') {
-			const classData = JSON.parse(homeworks.info)
-			className = classData.name + "(" + classData.teachers + ")";
-		}
-		const data = {
-			title: detail.data.assignmentTitle,
-			content: detail.data.assignmentContent,
-			noSubmitNum: detail.data.noSubmitNum,
-			totalNum: detail.data.totalNum,
-			stayReadNum: detail.data.stayReadNum,
-			alreadyReadNum: detail.data.alreadyReadNum,
-			assignmentBeginTime: detail.data.assignmentBeginTime,
-			assignmentEndTime: detail.data.assignmentEndTime,
-			chapterName: detail.data.chapterName,
-			className,
-		}
-		return new Response(html(data), {
-			headers: {
-				'Content-Type': 'text/html',
 			},
 		});
 	})

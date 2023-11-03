@@ -103,11 +103,6 @@ export interface ResourceDetailResult {
     data: ResourceDetail[];
 }
 
-export interface ShortURL {
-    key: string;
-    username: string;
-    homework_id: string;
-}
 
 export interface Homework {
     id: string;
