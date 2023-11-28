@@ -1,5 +1,5 @@
 
-import { UserInfo, UndoneListResult, DetailResult, Resource, ResourceDetailResult } from "./types";
+import { UserInfo, UndoneListResult, DetailResult, Resource, ResourceDetailResult, PreviewUrlResponse } from "./types";
 
 export async function refreshToken(refresh_token: string) {
     const body: FormData = new FormData();
@@ -203,13 +203,13 @@ export async function searchCourses(userinfo: UserInfo, ids: string[]) {
         name: x.siteName,
         teachers: x.teachers.map((y: any) => y.name).join(', '),
     }))
-    const result: { [key: string]: any } = {};
     const hashMap = new Map<string, number>();
     let count = ids.length
     for (let i = 0; i < ids.length; i++) {
       hashMap.set(ids[i], i);
     }
     async function searchWithLimit(list: any, limit = 5) {
+        const result: { [key: string]: any } = {};
         for (let i = 0; i < list.length; i += limit) {
           const batch = list.slice(i, i + limit);
           const jobs = batch.map((x: any) => getTasks(x.id, userinfo.access_token));
@@ -233,7 +233,11 @@ export async function searchCourses(userinfo: UserInfo, ids: string[]) {
       
     return await searchWithLimit(list);
 }
-
+async function getPreviewURL(storageId: string) {
+    const res = await fetch("https://apiucloud.bupt.edu.cn/blade-source/resource/preview-url?resourceId=" + storageId)
+    const json: PreviewUrlResponse = await res.json();
+    return json.data.previewUrl;
+}
 export async function getResource(userinfo: UserInfo, resources: Resource[]) {
     if (resources.length === 0) {
         return []
@@ -245,13 +249,31 @@ export async function getResource(userinfo: UserInfo, resources: Resource[]) {
         }
     })
     const json: ResourceDetailResult = await res.json();
-    json.data = json.data.map(x => ({
-        name: x.name,
-        storageId: x.storageId,
-        ext: x.ext
-    }))
     if (!json.success) {
         throw new Error(json.message);
     }
-    return json.data;
+    const storageIds = json.data.map(x => x.storageId);
+    async function getPreviewURLWithLimit(storageIds: string[], limit = 5) {
+        const result: { [key: string]: string } = {};
+        for (let i = 0; i < storageIds.length; i += limit) {
+          const batch = storageIds.slice(i, i + limit);
+          const jobs = batch.map((x: string) => getPreviewURL(x));
+          const ress = await Promise.all(jobs);
+          for (let j = 0; j < ress.length; j++) {
+            const res = ress[j];
+            if (res) {
+              result[batch[j]] = res;
+            }
+          }
+        }
+        return result;
+    }
+    const urlMap = await getPreviewURLWithLimit(storageIds);
+    const result = json.data.map(x => ({
+        storageId: x.storageId,
+        name: x.name,
+        ext: x.ext,
+        url: urlMap[x.storageId],
+    }));
+    return result;
 }

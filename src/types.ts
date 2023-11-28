@@ -108,3 +108,12 @@ export interface Homework {
     id: string;
     info: string;
 }
+
+export interface PreviewUrlResponse {
+    code: number;
+    success: boolean;
+    data: {
+        previewUrl: string
+    };
+    msg: string
+}

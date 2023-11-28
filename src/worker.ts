@@ -1,7 +1,6 @@
 import { Router, RouteHandler, IRequest } from 'itty-router';
 import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource } from './crawler';
-import { html } from './preview';
 import log from './log';
 import { UserInfo, Homework, UndoneList, UndoneListItem, UndoneListResult } from './types';
 import { v4 as uuid } from 'uuid'
