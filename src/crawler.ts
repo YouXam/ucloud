@@ -252,7 +252,7 @@ export async function getResource(userinfo: UserInfo, resources: Resource[]) {
     if (!json.success) {
         throw new Error(json.message);
     }
-    const storageIds = json.data.map(x => x.storageId);
+    const ids = resources.map(x => x.resourceId);
     async function getPreviewURLWithLimit(storageIds: string[], limit = 5) {
         const result: { [key: string]: string } = {};
         for (let i = 0; i < storageIds.length; i += limit) {
@@ -268,12 +268,13 @@ export async function getResource(userinfo: UserInfo, resources: Resource[]) {
         }
         return result;
     }
-    const urlMap = await getPreviewURLWithLimit(storageIds);
+    const urlMap = await getPreviewURLWithLimit(ids);
     const result = json.data.map(x => ({
         storageId: x.storageId,
         name: x.name,
         ext: x.ext,
-        url: urlMap[x.storageId],
+        url: urlMap[x.id],
+        id: x.id
     }));
     return result;
 }

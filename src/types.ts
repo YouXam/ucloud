@@ -94,7 +94,8 @@ export interface DetailResult {
 export interface ResourceDetail {
     storageId: string;
     name: string;
-    ext: string
+    ext: string;
+    id: string;
 }
 
 export interface ResourceDetailResult {
