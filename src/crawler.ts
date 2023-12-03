@@ -1,5 +1,5 @@
 
-import { UserInfo, UndoneListResult, DetailResult, Resource, ResourceDetailResult, PreviewUrlResponse } from "./types";
+import { UserInfo, UndoneListResponse, DetailResponse, Resource, ResourceDetailResponse, PreviewUrlResponse } from "./types";
 
 export async function refreshToken(refresh_token: string) {
     const body: FormData = new FormData();
@@ -80,7 +80,7 @@ export async function login(username: string, password: string) {
     return json;
 }
 
-export async function getUndoneList(userinfo: UserInfo) {
+export async function getUndoneList(userinfo: UserInfo): Promise<UndoneListResponse> {
     const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/site/student/undone?userId=" + userinfo.user_id, {
         "headers": {
             "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
@@ -93,11 +93,11 @@ export async function getUndoneList(userinfo: UserInfo) {
         },
         "method": "GET"
     });
-    const json: UndoneListResult = await res.json();
+    const json: UndoneListResponse = await res.json();
     return json;
 }
 
-export async function getDetail(id: string, userinfo: UserInfo) {
+export async function getDetail(id: string, userinfo: UserInfo): Promise<DetailResponse> {
     const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/work/detail?assignmentId=" + id, {
         "headers": {
             "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
@@ -109,7 +109,7 @@ export async function getDetail(id: string, userinfo: UserInfo) {
         "body": null,
         "method": "GET"
     })
-    const json: DetailResult = await res.json();
+    const json: DetailResponse = await res.json();
     return json;
 }
 
@@ -248,9 +248,9 @@ export async function getResource(userinfo: UserInfo, resources: Resource[]) {
             "blade-auth": userinfo.access_token,
         }
     })
-    const json: ResourceDetailResult = await res.json();
+    const json: ResourceDetailResponse = await res.json();
     if (!json.success) {
-        throw new Error(json.message);
+        throw new Error(json.msg);
     }
     const ids = resources.map(x => x.resourceId);
     async function getPreviewURLWithLimit(storageIds: string[], limit = 5) {

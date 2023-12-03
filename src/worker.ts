@@ -2,7 +2,7 @@ import { Router, RouteHandler, IRequest } from 'itty-router';
 import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource } from './crawler';
 import log from './log';
-import { UserInfo, Homework, UndoneList, UndoneListItem, UndoneListResult } from './types';
+import { UserInfo, Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
 import { v4 as uuid } from 'uuid'
 
 function isNumeric(str: string) {
@@ -51,7 +51,7 @@ async function getInfoWithCache(userinfo: UserInfo, id: string, keyword: string,
 		.bind(id)
 		.first();
 	if (last && typeof last.info === 'string') {
-		
+
 		log('Search', 'Use cached course info')
 		return JSON.parse(last.info)
 	}
@@ -65,9 +65,9 @@ const router = Router();
 
 router
 	.get('/undoneList', handleAuthRoutes, async ({ token }, env: Env) => {
-		const res: UndoneListResult = await getUndoneList(token);
+		const res: UndoneListResponse = await getUndoneList(token);
 		if (!res.success) {
-			return new Response(res.message, { status: 500 });
+			return new Response(res.msg, { status: 500 });
 		}
 		const ids = res.data.undoneList.map((item) => item.activityId)
 			.filter(id => isNumeric(id))
@@ -122,7 +122,7 @@ router
 		}
 		const res = await getDetail(id, token);
 		if (!res.success) {
-			return new Response(res.message, { status: 500 });
+			return new Response(res.msg, { status: 500 });
 		}
 		const info = await getInfoWithCache(token, id, res.data.assignmentTitle, env.DB);
 		res.data.courseInfo = info
@@ -152,9 +152,98 @@ router
 		});
 	})
 
+	.post('/upload', handleAuthRoutes, async (request, env: Env) => {
+		const body: { url: string, filename: string, mime_type: string } = await request.json(), token: UserInfo = request.token;
+		const downloadUrl = body.url;
+		const downloadResponse = await fetch(downloadUrl);
+
+		
+		if (!downloadResponse.ok || !downloadResponse.body) {
+			return new Response('Error fetching file', { status: downloadResponse.status });
+		}
+		const boundary = '----WebKitFormBoundaryp4BkfnvvAcH6s0Pg';
+		const initialPart = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${body.filename}"\r\nContent-Type: ${body.mime_type}\r\n\r\n`;
+		const endPart = `\r\n--${boundary}\r\nContent-Disposition: form-data; name="userId"\r\n\r\n${token.user_id}\r\n--${boundary}\r\nContent-Disposition: form-data; name="bizType"\r\n\r\n3\r\n--${boundary}--`;
+		const { readable, writable } = new TransformStream();
+
+		const uploadResponsePromise = fetch("https://apiucloud.bupt.edu.cn/blade-source/resource/upload/biz", {
+			method: 'POST',
+			body: readable,
+			headers: {
+				'Content-Type': `multipart/form-data; boundary=${boundary}`,
+				"Authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
+				"Blade-Auth": token.access_token,
+			}
+		});
+		const writer = writable.getWriter();
+		await writer.write(new TextEncoder().encode(initialPart));
+		const reader = downloadResponse.body.getReader();
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) {
+				break;
+			}
+			await writer.write(value);
+		}
+		await writer.write(new TextEncoder().encode(endPart));
+		await writer.close();
+		
+		const uploadResponse = await uploadResponsePromise;
+		const uploadResponseBody: UploadResponse = await uploadResponse.json();
+		if (!uploadResponse.ok || !uploadResponseBody.success) {
+			return new Response(uploadResponseBody.msg, { status: uploadResponse.status });
+		}
+		return new Response(JSON.stringify({
+			success: true,
+			resourceId: uploadResponseBody.data
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+	})
+
+	.post('/submit', handleAuthRoutes, async (request: IRequest, env: Env) => {
+		const {assignmentId, assignmentContent, attachmentIds }: { assignmentId: string, attachmentIds: string[], assignmentContent: string } = await request.json(), token: UserInfo = request.token;
+		if (!assignmentId || typeof assignmentId !== 'string') {
+			return new Response('Invalid arguments', { status: 400 });
+		}
+		const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/work/submit", {
+			method: 'POST',
+			body: JSON.stringify({
+				attachmentIds: attachmentIds || [],
+				assignmentContent: assignmentContent || "",
+				assignmentId,
+				assignmentType: 0,
+				userId: token.user_id,
+				groupId: "",
+				commitId: ""
+			}),
+			headers: {
+				'Content-Type': 'application/json',
+				"Authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
+				"Blade-Auth": token.access_token,
+			}
+		});
+		const resBody: BasicResponse = await res.json();
+		if (!resBody.success) {
+			return new Response(JSON.stringify({
+				success: false,
+				msg: resBody.msg,
+			}), { status: res.status });
+		}
+		return new Response(JSON.stringify({
+			success: true,
+		}), {
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+	})
+
 	.all('*', (request) => {
 		const url = new URL(request.url);
-		return new Response(`Not Found: ${url.pathname}`, { status: 404 });
+		return new Response(`Not Found: ${request.method} ${url.pathname}`, { status: 404 });
 	});
 
 export default {

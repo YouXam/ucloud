@@ -44,11 +44,6 @@ export interface UndoneList {
     undoneNum: number;
     undoneList: UndoneListItem[];
 }
-export interface UndoneListResult {
-    success: boolean;
-    message: string;
-    data: UndoneList;
-}
 
 export interface Resource {
     resourceId: string;
@@ -85,12 +80,6 @@ export interface Detail {
     resource?: ResourceDetail[];
 }
 
-export interface DetailResult {
-    success: boolean;
-    message: string;
-    data: Detail;
-}
-
 export interface ResourceDetail {
     storageId: string;
     name: string;
@@ -98,23 +87,19 @@ export interface ResourceDetail {
     id: string;
 }
 
-export interface ResourceDetailResult {
-    success: boolean;
-    message: string;
-    data: ResourceDetail[];
-}
-
-
 export interface Homework {
     id: string;
     info: string;
 }
 
-export interface PreviewUrlResponse {
-    code: number;
+export interface BasicResponse {
     success: boolean;
-    data: {
-        previewUrl: string
-    };
-    msg: string
+    msg: string;
+    code: number;
 }
+
+export type UndoneListResponse = { data: UndoneList } & BasicResponse;
+export type DetailResponse = { data: Detail } & BasicResponse;
+export type ResourceDetailResponse = { data: ResourceDetail[] } & BasicResponse;
+export type PreviewUrlResponse = { data: { previewUrl: string } } & BasicResponse;
+export type UploadResponse = { data: string } & BasicResponse;
