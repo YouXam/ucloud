@@ -233,8 +233,8 @@ export async function searchCourses(userinfo: UserInfo, ids: string[]) {
       
     return await searchWithLimit(list);
 }
-async function getPreviewURL(storageId: string) {
-    const res = await fetch("https://apiucloud.bupt.edu.cn/blade-source/resource/preview-url?resourceId=" + storageId)
+export async function getPreviewURL(resourceId: string) {
+    const res = await fetch("https://apiucloud.bupt.edu.cn/blade-source/resource/preview-url?resourceId=" + resourceId)
     const json: PreviewUrlResponse = await res.json();
     return json.data.previewUrl;
 }

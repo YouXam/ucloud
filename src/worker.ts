@@ -1,9 +1,11 @@
 import { Router, RouteHandler, IRequest } from 'itty-router';
 import { getToken } from './auth';
-import { getUndoneList, getDetail, searchCourse, searchCourses, getResource } from './crawler';
+import { getUndoneList, getDetail, searchCourse, searchCourses, getResource, getPreviewURL } from './crawler';
 import log from './log';
 import { UserInfo, Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
 import { v4 as uuid } from 'uuid'
+
+const jsonHeaders = { headers: { 'Content-Type': 'application/json' } }
 
 function isNumeric(str: string) {
 	if (str.length === 0) return false;
@@ -108,11 +110,7 @@ router
 			}))
 		}
 
-		return new Response(JSON.stringify(res.data), {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		return new Response(JSON.stringify(res.data), jsonHeaders);
 	})
 
 	.get('/homework', handleAuthRoutes, async ({ query, token }, env: Env) => {
@@ -132,11 +130,7 @@ router
 				res.data.resource = resource;
 			}
 		}
-		return new Response(JSON.stringify(res.data), {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		return new Response(JSON.stringify(res.data), jsonHeaders);
 	})
 
 	.get('/search', handleAuthRoutes, async ({ query, token }, env: Env) => {
@@ -145,11 +139,7 @@ router
 			return new Response('Invalid arguments', { status: 400 });
 		}
 		const info = await getInfoWithCache(token, id, keyword, env.DB);
-		return new Response(JSON.stringify(info), {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		return new Response(JSON.stringify(info), jsonHeaders);
 	})
 
 	.post('/upload', handleAuthRoutes, async (request, env: Env) => {
@@ -191,16 +181,18 @@ router
 		const uploadResponse = await uploadResponsePromise;
 		const uploadResponseBody: UploadResponse = await uploadResponse.json();
 		if (!uploadResponse.ok || !uploadResponseBody.success) {
-			return new Response(uploadResponseBody.msg, { status: uploadResponse.status });
+			return new Response(JSON.stringify({
+				code: uploadResponseBody.code,
+				success: false,
+				msg: uploadResponseBody.msg,
+			}));
 		}
 		return new Response(JSON.stringify({
 			success: true,
-			resourceId: uploadResponseBody.data
-		}), {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+			code: 0,
+			resourceId: uploadResponseBody.data,
+			previewUrl: await getPreviewURL(uploadResponseBody.data)
+		}), { headers: { 'Content-Type': 'application/json' } });
 	})
 
 	.post('/submit', handleAuthRoutes, async (request: IRequest, env: Env) => {
@@ -208,6 +200,7 @@ router
 		if (!assignmentId || typeof assignmentId !== 'string') {
 			return new Response('Invalid arguments', { status: 400 });
 		}
+		console.log(assignmentId, assignmentContent, attachmentIds)
 		const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/work/submit", {
 			method: 'POST',
 			body: JSON.stringify({
