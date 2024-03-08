@@ -13,10 +13,15 @@ function base64UrlDecode(str: string) {
 }
 
 function isExpire(token: string) {
-    const payload: {
-        exp: number
-    } = JSON.parse(base64UrlDecode(token.split('.')[1]))
-    return payload.exp < Date.now() / 1000;
+    try {
+        const payload: {
+            exp: number
+        } = JSON.parse(base64UrlDecode(token.split('.')[1]))
+        return payload.exp < Date.now() / 1000;
+    } catch (err) {
+        log('Auth', 'Token parse error', err);
+        return true;
+    }
 }
 
 
