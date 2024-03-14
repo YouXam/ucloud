@@ -29,9 +29,9 @@ const handleAuthRoutes: RouteHandler = async (request: IRequest, env: Env, ctx: 
 	}
 
 	const base64Credentials = authHeader.split(' ')[1];
-	const credentials = atob(base64Credentials).split(':');
-	const username = credentials[0];
-	const password = credentials[1];
+
+	const [username, ...passwords] = atob(base64Credentials).split(':');
+	const password = passwords.join(":")
 	if (!username?.length || !password?.length) {
 		return new Response('Unauthorized', {
 			status: 401,
