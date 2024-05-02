@@ -255,7 +255,6 @@ export async function searchCourses(userinfo: UserInfo, items: UndoneListItem[])
         return result;
     }
     const result = {}
-    console.log(types)
     // 问卷
     if (types[2]) {
         Object.assign(result, await searchWithLimit(list, (siteId: string, token: string) => getSurvey(userinfo.user_id, siteId, token)));
