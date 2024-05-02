@@ -83,7 +83,7 @@ router
 		const notInCache = res.data.undoneList.filter((item) => !inCacheMap.has(item.activityId));
 		if (notInCache.length !== 0) {
 			log('UndoneList', `${inCache.length}/${res.data.undoneList.length} in cache, ${notInCache.length} not in cache, fetching...`);
-			const coursesInfo = await searchCourses(token, notInCache.map((item) => item.activityId));
+			const coursesInfo = await searchCourses(token, notInCache);
 			const stmt = env.DB.prepare(`INSERT INTO homeworks (id, info) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET info = excluded.info`)
 			const coursesInfoArr = Object.entries(coursesInfo)
 			if (coursesInfoArr.length > 0) {

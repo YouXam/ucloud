@@ -1,5 +1,5 @@
 
-import { UserInfo, UndoneListResponse, DetailResponse, Resource, ResourceDetailResponse, PreviewUrlResponse } from "./types";
+import { UserInfo, UndoneListResponse, DetailResponse, Resource, ResourceDetailResponse, PreviewUrlResponse, UndoneListItem, CourseInfo, ItemResponse } from "./types";
 
 export async function refreshToken(refresh_token: string) {
     const body: FormData = new FormData();
@@ -149,27 +149,27 @@ export async function searchCourse(userinfo: UserInfo, id: string, keyword: stri
     }))
     async function searchWithLimit(list: any, limit = 5) {
         for (let i = 0; i < list.length; i += limit) {
-          const batch = list.slice(i, i + limit);
-          const jobs = batch.map((x: any) => searchTask(x.id, keyword, userinfo.access_token));
-          const ress = await Promise.all(jobs);
-          for (let j = 0; j < ress.length; j++) {
-            const res = ress[j];
-            if (res.data.records.length > 0) {
-              for (const item of res.data.records) {
-                if (item.id == id) {
-                  return batch[j];
+            const batch = list.slice(i, i + limit);
+            const jobs = batch.map((x: any) => searchTask(x.id, keyword, userinfo.access_token));
+            const ress = await Promise.all(jobs);
+            for (let j = 0; j < ress.length; j++) {
+                const res = ress[j];
+                if (res.data.records.length > 0) {
+                    for (const item of res.data.records) {
+                        if (item.id == id) {
+                            return batch[j];
+                        }
+                    }
                 }
-              }
             }
-          }
         }
         return null;
     }
-      
+
     return await searchWithLimit(list);
 }
 
-async function getTasks(siteId: string, token: string) {
+async function getHomeworks(siteId: string, token: string) {
     const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/work/student/list", {
         "headers": {
             "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
@@ -183,12 +183,34 @@ async function getTasks(siteId: string, token: string) {
         }),
         "method": "POST"
     });
-    const json = await res.json();
+    const json: ItemResponse = await res.json();
+    return json
+}
+
+async function getTests(siteId: string, token: string) {
+    const res = await fetch(`https://apiucloud.bupt.edu.cn/ykt-site/examination/list-stu?current=1&size=999999&status=-1&siteId=${siteId}&statusSelf=%E6%9C%AA%E6%8F%90%E4%BA%A4&state=-1`, {
+        "headers": {
+            "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
+            "blade-auth": token
+        },
+    })
+    const json: ItemResponse = await res.json();
+    return json
+}
+
+async function getSurvey(userId: string, siteId: string, token: string) {
+    const res = await fetch(`https://apiucloud.bupt.edu.cn/ykt-activity/survey/page/todo?level=1&size=9999999&userId=${userId}&siteId=${siteId}`, {
+        "headers": {
+            "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
+            "blade-auth": token
+        },
+    })
+    const json: ItemResponse = await res.json();
     return json
 }
 
 
-export async function searchCourses(userinfo: UserInfo, ids: string[]) {
+export async function searchCourses(userinfo: UserInfo, items: UndoneListItem[]): Promise<Record<string, CourseInfo>> {
     const res = await fetch("https://apiucloud.bupt.edu.cn/ykt-site/site/list/student/current?size=999999&current=1&userId=" + userinfo.user_id + "&siteRoleCode=2", {
         "headers": {
             "authorization": "Basic cG9ydGFsOnBvcnRhbF9zZWNyZXQ=",
@@ -198,40 +220,55 @@ export async function searchCourses(userinfo: UserInfo, ids: string[]) {
         "method": "GET"
     });
     const json: any = await res.json();
-    const list = json.data.records.map((x: any) => ({
+    const list: CourseInfo[] = json.data.records.map((x: any) => ({
         id: x.id,
         name: x.siteName,
         teachers: x.teachers.map((y: any) => y.name).join(', '),
     }))
     const hashMap = new Map<string, number>();
-    let count = ids.length
-    for (let i = 0; i < ids.length; i++) {
-      hashMap.set(ids[i], i);
+    const types: Record<number, boolean> = {}
+    let count = items.length
+    for (let i = 0; i < items.length; i++) {
+        types[items[i].type] = true;
+        hashMap.set(items[i].activityId, i);
     }
-    async function searchWithLimit(list: any, limit = 5) {
+    async function searchWithLimit(list: CourseInfo[], searchFunc: typeof getHomeworks, limit = 5) {
         const result: { [key: string]: any } = {};
         for (let i = 0; i < list.length; i += limit) {
-          const batch = list.slice(i, i + limit);
-          const jobs = batch.map((x: any) => getTasks(x.id, userinfo.access_token));
-          const ress = await Promise.all(jobs);
-          for (let j = 0; j < ress.length; j++) {
-            const res = ress[j];
-            if (res.data.records.length > 0) {
-              for (const item of res.data.records) {
-                if (hashMap.has(item.id)) {
-                  result[item.id] = batch[j];
-                  if (--count == 0) {
-                    return result;
-                  }
+            const batch = list.slice(i, i + limit);
+            const jobs = batch.map((x: any) => searchFunc(x.id, userinfo.access_token));
+            const ress = await Promise.all(jobs);
+            for (let j = 0; j < ress.length; j++) {
+                const res = ress[j];
+                if (res.data.records.length > 0) {
+                    for (const item of res.data.records) {
+                        if (hashMap.has(item.id)) {
+                            result[item.id] = batch[j];
+                            if (--count == 0) {
+                                return result;
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }
         }
         return result;
     }
-      
-    return await searchWithLimit(list);
+    const result = {}
+    console.log(types)
+    // 问卷
+    if (types[2]) {
+        Object.assign(result, await searchWithLimit(list, (siteId: string, token: string) => getSurvey(userinfo.user_id, siteId, token)));
+    }
+    // 作业
+    if (types[3]) {
+        Object.assign(result, await searchWithLimit(list, getHomeworks));
+    }
+    // 测验
+    if (types[4]) {
+        Object.assign(result, await searchWithLimit(list, getTests));
+    }
+    return result
 }
 export async function getPreviewURL(resourceId: string) {
     const res = await fetch("https://apiucloud.bupt.edu.cn/blade-source/resource/preview-url?resourceId=" + resourceId)
@@ -256,15 +293,15 @@ export async function getResource(userinfo: UserInfo, resources: Resource[]) {
     async function getPreviewURLWithLimit(storageIds: string[], limit = 5) {
         const result: { [key: string]: string } = {};
         for (let i = 0; i < storageIds.length; i += limit) {
-          const batch = storageIds.slice(i, i + limit);
-          const jobs = batch.map((x: string) => getPreviewURL(x));
-          const ress = await Promise.all(jobs);
-          for (let j = 0; j < ress.length; j++) {
-            const res = ress[j];
-            if (res) {
-              result[batch[j]] = res;
+            const batch = storageIds.slice(i, i + limit);
+            const jobs = batch.map((x: string) => getPreviewURL(x));
+            const ress = await Promise.all(jobs);
+            for (let j = 0; j < ress.length; j++) {
+                const res = ress[j];
+                if (res) {
+                    result[batch[j]] = res;
+                }
             }
-          }
         }
         return result;
     }

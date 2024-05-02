@@ -28,6 +28,11 @@ export interface UserRecord {
     userinfo: string
 }
 
+export interface CourseInfo {
+    id: string;
+    name: string;
+    teachers: string;
+}
 export interface UndoneListItem {
     siteId: number;
     siteName: string;
@@ -38,6 +43,7 @@ export interface UndoneListItem {
     assignmentType: number;
     evaluationStatus: number;
     isOpenEvaluation: number;
+    courseInfo?: CourseInfo
 }
 export interface UndoneList {
     siteNum: number;
@@ -96,6 +102,14 @@ export interface BasicResponse {
     success: boolean;
     msg: string;
     code: number;
+}
+
+export type ItemResponse = {
+    data: {
+        records: Array<{
+            id: string;
+        }>
+    }
 }
 
 export type UndoneListResponse = { data: UndoneList } & BasicResponse;
