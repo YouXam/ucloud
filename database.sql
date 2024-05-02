@@ -11,5 +11,6 @@ CREATE TABLE users (
 -- 创建 homeworks 表
 CREATE TABLE homeworks (
     id VARCHAR(255) PRIMARY KEY,
-    info TEXT
+    info TEXT,
+    endtime DATETIME
 );

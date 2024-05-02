@@ -81,13 +81,14 @@ router
 			}));
 		const inCacheMap = new Map(inCache.map(x => [x.id, x]));
 		const notInCache = res.data.undoneList.filter((item) => !inCacheMap.has(item.activityId));
+		const notInCacheMap = new Map(notInCache.map(x => [x.activityId, x]));
 		if (notInCache.length !== 0) {
 			log('UndoneList', `${inCache.length}/${res.data.undoneList.length} in cache, ${notInCache.length} not in cache, fetching...`);
 			const coursesInfo = await searchCourses(token, notInCache);
-			const stmt = env.DB.prepare(`INSERT INTO homeworks (id, info) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET info = excluded.info`)
+			const stmt = env.DB.prepare(`INSERT INTO homeworks (id, info, endtime) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET info = excluded.info, endtime = excluded.endtime`);
 			const coursesInfoArr = Object.entries(coursesInfo)
 			if (coursesInfoArr.length > 0) {
-				const batch = coursesInfoArr.map(([id, info]) => stmt.bind(id, JSON.stringify(info)));
+				const batch = coursesInfoArr.map(([id, info]) => stmt.bind(id, JSON.stringify(info), notInCacheMap.get(id)?.endTime));
 				await env.DB.batch(batch);
 			}
 			res.data.undoneList = res.data.undoneList.map(item => {
@@ -112,7 +113,24 @@ router
 
 		return new Response(JSON.stringify(res.data), jsonHeaders);
 	})
-
+	// 获取数据库中的缓存
+	.get('/cache', handleAuthRoutes, async ({ query, token }, env: Env) => {
+		const id = query.id;
+		if (!id || typeof id !== 'string') {
+			return new Response('Invalid id', { status: 400 });
+		}
+		const last = await env.DB.prepare(`SELECT * FROM homeworks WHERE id = ?`)
+			.bind(id)
+			.first();
+		if (!last) {
+			return new Response('Not found', { status: 404 });
+		}
+		return new Response(JSON.stringify({
+			id: last.id,
+			info: JSON.parse(last.info as string),
+			endTime: last.endtime,
+		}), jsonHeaders);
+	})
 	.get('/homework', handleAuthRoutes, async ({ query, token }, env: Env) => {
 		const id = query.id;
 		if (!id || typeof id !== 'string') {
