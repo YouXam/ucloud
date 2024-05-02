@@ -114,7 +114,7 @@ router
 		return new Response(JSON.stringify(res.data), jsonHeaders);
 	})
 	// 获取数据库中的缓存
-	.get('/cache', handleAuthRoutes, async ({ query, token }, env: Env) => {
+	.get('/cache', async ({ query, token }, env: Env) => {
 		const id = query.id;
 		if (!id || typeof id !== 'string') {
 			return new Response('Invalid id', { status: 400 });
