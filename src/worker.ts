@@ -85,10 +85,14 @@ router
 		if (notInCache.length !== 0) {
 			log('UndoneList', `${inCache.length}/${res.data.undoneList.length} in cache, ${notInCache.length} not in cache, fetching...`);
 			const coursesInfo = await searchCourses(token, notInCache);
-			const stmt = env.DB.prepare(`INSERT INTO homeworks (id, info, endtime) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET info = excluded.info, endtime = excluded.endtime`);
+			const stmt = env.DB.prepare(`INSERT INTO homeworks (id, info) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET info = excluded.info`);
 			const coursesInfoArr = Object.entries(coursesInfo)
 			if (coursesInfoArr.length > 0) {
-				const batch = coursesInfoArr.map(([id, info]) => stmt.bind(id, JSON.stringify(info), notInCacheMap.get(id)?.endTime));
+				const batch = coursesInfoArr.map(([id, info]) => stmt.bind(id, JSON.stringify({
+					...info,
+					activityName: notInCacheMap.get(id)?.activityName,
+					endTime: notInCacheMap.get(id)?.endTime,
+				})));
 				await env.DB.batch(batch);
 			}
 			res.data.undoneList = res.data.undoneList.map(item => {
