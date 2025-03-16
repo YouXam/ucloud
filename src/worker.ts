@@ -3,7 +3,6 @@ import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource, getPreviewURL } from './crawler';
 import log from './log';
 import { UserInfo, Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
-import { v4 as uuid } from 'uuid'
 
 const jsonHeaders = { headers: { 'Content-Type': 'application/json' } }
 

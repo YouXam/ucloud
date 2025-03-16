@@ -7,6 +7,4 @@ binding = "DB"
 database_name = "xxxxx"
 database_id = "xxxxxx"
 
-rules = [
-  { type = "Text", globs = ["**/*.html"], fallthrough = true }
-]
+
