@@ -17,7 +17,7 @@ export async function refreshToken(refresh_token: string) {
 }
 
 export async function getCookieAndExecution() {
-    const res = await fetch("https://auth.bupt.edu.cn/authserver/login?service=http://ucloud.bupt.edu.cn")
+    const res = await fetch("https://auth.bupt.edu.cn/authserver/login?service=https://ucloud.bupt.edu.cn")
     const cookie = res.headers.get('set-cookie');
     if (!cookie || !cookie.length) {
         throw new Error('Failed to obtain the cookie from the HTML response');
@@ -39,7 +39,7 @@ export async function login(username: string, password: string) {
             'authority': 'auth.bupt.edu.cn',
             'content-type': 'application/x-www-form-urlencoded',
             'cookie': cookie,
-            'referer': 'https://auth.bupt.edu.cn/authserver/login?service=http://ucloud.bupt.edu.cn',
+            'referer': 'https://auth.bupt.edu.cn/authserver/login?service=https://ucloud.bupt.edu.cn',
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61',
         },
         body: bodyp + '&submit=%E7%99%BB%E5%BD%95&type=username_password&execution=' + execution + '&_eventId=submit',
