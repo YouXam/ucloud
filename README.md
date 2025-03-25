@@ -2,13 +2,40 @@
 
 ## 使用
 
-鉴权使用 http basic auth，用户名和密码为学号和统一认证密码。
+以下接口均需要使用 http basic auth 鉴权，用户名和密码为学号和统一认证密码。
 
-1. `https://ucloud.youxam.workers.dev/undoneList`
+API base URL 为 `https://ucloud.youxam.workers.dev`。
+
+1. **GET** `/undoneList`
     获取未完成作业列表。
-2. `https://ucloud.youxam.workers.dev/homework?id=<activityId>`
+2. **GET** `/homework?id=<activityId>`
     获取作业详情，其中 `activityId` 可以从未完成作业列表中获取。
-3. 更多接口见 [src/worker.ts](src/worker.ts)。
+3. **GET** `/search?id=<activityId>&keyword=<keyword>`
+    通过作业反向搜索课程信息，其中 `keyword` 建议为作业标题。
+4. **POST** `/upload`
+    从指定 URL 下载文件并上传到教学云平台。
+    ```ts
+    type Body = {
+        // 文件 URL
+        url: string;
+        // 文件名
+        filename: string;
+        // 文件 mime-type
+        mime_type: string;
+    }
+    ```
+5. **POST** `/submit`
+    提交作业。
+    ```ts
+    type Body = {
+        // 作业 ID (activityId)
+        assignmentId: string;
+        // 作业文字内容
+        assignmentContent?: string
+        // 附件列表，每一项为 `/upload` 接口返回的 resourceId
+        attachmentIds: string[];
+    }
+    ```
 
 ## 部署
 

@@ -2,7 +2,8 @@ import { Router, RouteHandler, IRequest } from 'itty-router';
 import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource, getPreviewURL } from './crawler';
 import log from './log';
-import { UserInfo, Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
+import { Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
+import { UserInfo } from '@byrdocs/bupt-auth';
 
 const jsonHeaders = { headers: { 'Content-Type': 'application/json' } }
 
@@ -41,7 +42,7 @@ const handleAuthRoutes: RouteHandler = async (request: IRequest, env: Env, ctx: 
 	}
 
 	try {
-		request.token = await getToken(username, password, env.DB);
+		request.token = await getToken(username, password, env.DB, env.OCR_TOKEN);
 	} catch (err: any) {
 		return new Response(err.toString(), { status: 401 });
 	}
@@ -52,7 +53,6 @@ async function getInfoWithCache(userinfo: UserInfo, id: string, keyword: string,
 		.bind(id)
 		.first();
 	if (last && typeof last.info === 'string') {
-
 		log('Search', 'Use cached course info')
 		return JSON.parse(last.info)
 	}
@@ -254,10 +254,8 @@ router
 			},
 		});
 	})
-
 	.all('*', (request) => {
-		const url = new URL(request.url);
-		return new Response(`Not Found: ${request.method} ${url.pathname}`, { status: 404 });
+		return Response.redirect("https://github.com/youXam/ucloud", 302)
 	});
 
 export default {

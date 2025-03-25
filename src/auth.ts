@@ -1,5 +1,5 @@
-import { login, refreshToken } from "./crawler";
-import { UserInfo, UserRecord } from "./types";
+import { UserRecord } from "./types";
+import { type UserInfo, byrdocs_login, refresh } from "@byrdocs/bupt-auth";
 import log from "./log";
 
 function base64UrlDecode(str: string) {
@@ -25,13 +25,13 @@ function isExpire(token: string) {
 }
 
 
-export async function getToken(username: string, password: string | null, db: D1Database) {
+export async function getToken(username: string, password: string | null, db: D1Database, ocr_token: string) {
     const users: D1Result<UserRecord> = await db.prepare('SELECT * FROM users WHERE username = ?')
         .bind(username)
         .all();
     async function reLogin() {
         if (!password?.length) throw new Error('Password required');
-        const userinfo = await login(username, password);
+        const userinfo = await byrdocs_login(username, password, ocr_token);
         await db.prepare('INSERT INTO users (username, password, userinfo) VALUES (?,?,?) ON CONFLICT (username) DO UPDATE SET password = excluded.password, userinfo = excluded.userinfo')
             .bind(username, password, JSON.stringify(userinfo))
             .run();
@@ -47,7 +47,7 @@ export async function getToken(username: string, password: string | null, db: D1
     }
     if (isExpire(userinfo.access_token)) {
         log('Auth', 'Access_token expired, refresh_token');
-        const newUserinfo = await refreshToken(userinfo.refresh_token);
+        const newUserinfo = await refresh(userinfo.refresh_token);
         await db.prepare('UPDATE users SET userinfo = ? WHERE username = ?')
             .bind(JSON.stringify(newUserinfo), username)
             .run();

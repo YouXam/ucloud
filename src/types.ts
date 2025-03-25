@@ -1,26 +1,3 @@
-export interface UserInfo {
-    access_token: string;
-    token_type: string;
-    refresh_token: string;
-    expires_in: number;
-    scope: string;
-    tenant_id: string;
-    role_name: string;
-    license: string;
-    loginId: string;
-    /** 用户 ID */
-    user_id: string;
-    /** 学号 */
-    user_name: string;
-    /** 姓名 */
-    real_name: string;
-    avatar: string;
-    dept_id: string;
-    client_id: string;
-    /** 学号 */
-    account: string;
-    jti: string;
-}
 
 export interface UserRecord {
     username: string;
