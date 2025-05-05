@@ -3,7 +3,7 @@ import { getToken } from './auth';
 import { getUndoneList, getDetail, searchCourse, searchCourses, getResource, getPreviewURL } from './crawler';
 import log from './log';
 import { Homework, UploadResponse, UndoneListResponse, BasicResponse } from './types';
-import { UserInfo } from '@byrdocs/bupt-auth';
+import { LoginError, UserInfo } from '@byrdocs/bupt-auth';
 
 const jsonHeaders = { headers: { 'Content-Type': 'application/json' } }
 
@@ -44,7 +44,11 @@ const handleAuthRoutes: RouteHandler = async (request: IRequest, env: Env, ctx: 
 	try {
 		request.token = await getToken(username, password, env.DB, env.OCR_TOKEN);
 	} catch (err: any) {
-		return new Response(err.toString(), { status: 401 });
+        if (err instanceof LoginError) {
+            log('Auth', 'Login error', err.name, err.message, err.stack);
+            return new Response(err.toString(), { status: 401 });
+        }
+        return new Response('Internal Server Error', { status: 500 });
 	}
 };
 

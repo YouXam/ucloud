@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@byrdocs/bupt-auth':
-        specifier: npm:@jsr/byrdocs__bupt-auth@^0.1.4
-        version: '@jsr/byrdocs__bupt-auth@0.1.4'
+        specifier: npm:@jsr/byrdocs__bupt-auth@^0.1.5
+        version: '@jsr/byrdocs__bupt-auth@0.1.5'
       itty-router:
         specifier: ^3.0.12
         version: 3.0.12
@@ -349,8 +349,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@jsr/byrdocs__bupt-auth@0.1.4':
-    resolution: {integrity: sha512-8lLQEw+Wb1MFrxAkceWHEek+DoGaaCoDMDhYCvWveP/aryTeQisHFmpTVP3WwtKK+4tncJNApewh8AOHnHETYA==, tarball: https://npm.jsr.io/~/11/@jsr/byrdocs__bupt-auth/0.1.4.tgz}
+  '@jsr/byrdocs__bupt-auth@0.1.5':
+    resolution: {integrity: sha512-RO7TJWIeiJRUvlvbUw+U30keJ2doDYAMzkQtccr2UiOV0J/mqanAsTV5gOhiTNcsjl2TQaaCziiIfhNsDnqfXA==, tarball: https://npm.jsr.io/~/11/@jsr/byrdocs__bupt-auth/0.1.5.tgz}
 
   acorn-walk@8.3.2:
     resolution: {integrity: sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A==}
@@ -723,7 +723,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@jsr/byrdocs__bupt-auth@0.1.4': {}
+  '@jsr/byrdocs__bupt-auth@0.1.5': {}
 
   acorn-walk@8.3.2: {}
 
